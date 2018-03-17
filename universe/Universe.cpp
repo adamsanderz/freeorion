@@ -203,7 +203,6 @@ void Universe::SetEmpireStats(Pending::Pending<EmpireStatsMap> future)
 const Universe::EmpireStatsMap& Universe::EmpireStats() const
 { return Pending::SwapPending(m_pending_empire_stats, m_empire_stats); }
 
-
 const ObjectMap& Universe::EmpireKnownObjects(int empire_id) const {
     if (empire_id == ALL_EMPIRES)
         return m_objects;
@@ -1352,8 +1351,8 @@ void Universe::GetEffectsAndTargets(Effect::TargetsCauses& targets_causes,
             continue;
 
         policy_sources.push_back(std::vector<std::shared_ptr<const UniverseObject>>(1U, source));
-        for (const auto tech_entry : empire->ResearchedTechs()) {
-            const Policy* policy = GetPolicy(tech_entry.first);
+        for (auto policy_name : empire->AdoptedPolicies()) {
+            const Policy* policy = GetPolicy(policy_name);
             if (!policy) continue;
 
             for (auto& effects_group : policy->Effects()) {
@@ -1560,7 +1559,7 @@ void Universe::ExecuteEffects(const Effect::TargetsCauses& targets_causes,
     ScopedTimer timer("Universe::ExecuteEffects", true);
 
     m_marked_destroyed.clear();
-    std::map< std::string, std::set<int>> executed_nonstacking_effects;
+    std::map<std::string, std::set<int>> executed_nonstacking_effects;
 
     // grouping targets causes by effects group
     // sorting by effects group has already been done in GetEffectsAndTargets()
@@ -1570,8 +1569,8 @@ void Universe::ExecuteEffects(const Effect::TargetsCauses& targets_causes,
         const Effect::EffectsGroup* last_effects_group   = nullptr;
         Effect::TargetsCauses*      group_targets_causes = nullptr;
 
-        for (const std::pair<Effect::SourcedEffectsGroup, Effect::TargetsAndCause>& targets_cause : targets_causes) {
-            const Effect::SourcedEffectsGroup& sourced_effects_group = targets_cause.first;
+        for (const auto& targets_cause : targets_causes) {
+            const auto& sourced_effects_group = targets_cause.first;
             Effect::EffectsGroup* effects_group = sourced_effects_group.effects_group.get();
 
             if (effects_group != last_effects_group) {
