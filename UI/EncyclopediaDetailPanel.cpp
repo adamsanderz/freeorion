@@ -1678,6 +1678,25 @@ namespace {
             }
         }
 
+        // Policies
+        auto policies = empire->AdoptedPolicies();
+        if (!policies.empty()) {
+            detailed_description += "\n" + UserString("ADOPTED_POLICIES");
+            for (const auto& entry : policies) {
+                detailed_description += "\n";
+                std::string turn_text;
+                int turn = empire->TurnPolicyAdopted(entry);
+                if (turn == BEFORE_FIRST_TURN)
+                    turn_text = UserString("BEFORE_FIRST_TURN");
+                else
+                    turn_text = UserString("TURN") + " " + std::to_string(turn);
+                detailed_description += LinkTaggedText(VarText::TECH_TAG, entry)
+                                     + " : " + turn_text;
+            }
+        } else {
+            detailed_description += "\n\n" + UserString("NO_POLICIES_ADOPTED");
+        }
+
         // Techs
         auto techs = empire->ResearchedTechs();
         if (!techs.empty()) {
@@ -1695,7 +1714,6 @@ namespace {
         } else {
             detailed_description += "\n\n" + UserString("NO_TECHS_RESEARCHED");
         }
-
 
         // Planets
         auto empire_planets = Objects().FindObjects(OwnedVisitor<Planet>(empire_id));
