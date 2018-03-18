@@ -1694,10 +1694,10 @@ struct FO_COMMON_API EmpireMeterValue : public ConditionBase {
 private:
     bool Match(const ScriptingContext& local_context) const override;
 
-    std::unique_ptr<ValueRef::ValueRefBase<int>>    m_empire_id = nullptr;
+    std::unique_ptr<ValueRef::ValueRefBase<int>>    m_empire_id;
     std::string                                     m_meter = "";
-    std::unique_ptr<ValueRef::ValueRefBase<double>> m_low = nullptr;
-    std::unique_ptr<ValueRef::ValueRefBase<double>> m_high = nullptr;
+    std::unique_ptr<ValueRef::ValueRefBase<double>> m_low;
+    std::unique_ptr<ValueRef::ValueRefBase<double>> m_high;
 };
 
 /** Matches all objects whose owner's stockpile of \a stockpile is between
@@ -1766,8 +1766,8 @@ struct FO_COMMON_API EmpireHasAdoptedPolicy : public ConditionBase {
 private:
     bool Match(const ScriptingContext& local_context) const override;
 
-    std::unique_ptr<ValueRef::ValueRefBase<std::string>>    m_name = nullptr;
-    std::unique_ptr<ValueRef::ValueRefBase<int>>            m_empire_id = nullptr;
+    std::unique_ptr<ValueRef::ValueRefBase<std::string>>    m_name;
+    std::unique_ptr<ValueRef::ValueRefBase<int>>            m_empire_id;
 
     friend class boost::serialization::access;
     template <class Archive>
