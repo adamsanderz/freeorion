@@ -3401,43 +3401,37 @@ public:
 
     /** \name Mutators */ //@{
     void StartingChildDragDrop(const GG::Wnd* wnd, const GG::Pt& offset) override;
-
     void CancellingChildDragDrop(const std::vector<const GG::Wnd*>& wnds) override;
-
-    void AcceptDrops(const GG::Pt& pt, std::vector<std::shared_ptr<GG::Wnd>> wnds, GG::Flags<GG::ModKey> mod_keys) override;
-
-    void ChildrenDraggedAway(const std::vector<GG::Wnd*>& wnds, const GG::Wnd* destination) override;
-
+    void AcceptDrops(const GG::Pt& pt, std::vector<std::shared_ptr<GG::Wnd>> wnds,
+                     GG::Flags<GG::ModKey> mod_keys) override;
+    void ChildrenDraggedAway(const std::vector<GG::Wnd*>& wnds,
+                             const GG::Wnd* destination) override;
     void DragDropEnter(const GG::Pt& pt, std::map<const Wnd*, bool>& drop_wnds_acceptable,
                        GG::Flags<GG::ModKey> mod_keys) override;
-
     void DragDropLeave() override;
 
     void Render() override;
+    void Highlight(bool actually = true);
 
-    void            Highlight(bool actually = true);
-
-    void            SetPart(const std::string& part_name);  //!< used to programmatically set the PartControl in this slot.  Does not emit signal
-    void            SetPart(const PartType* part_type = nullptr); //!< used to programmatically set the PartControl in this slot.  Does not emit signal
+    void SetPart(const std::string& part_name);         //!< used to programmatically set the PartControl in this slot.  Does not emit signal
+    void SetPart(const PartType* part_type = nullptr);  //!< used to programmatically set the PartControl in this slot.  Does not emit signal
     //@}
 
     /** emitted when the contents of a slot are altered by the dragging
       * a PartControl in or out of the slot.  signal should be caught and the
       * slot contents set using SetPart accordingly */
     mutable boost::signals2::signal<void (const PartType*, bool)> SlotContentsAlteredSignal;
-
     mutable boost::signals2::signal<void (const PartType*, GG::Flags<GG::ModKey>)> PartTypeClickedSignal;
 
 protected:
     bool EventFilter(GG::Wnd* w, const GG::WndEvent& event) override;
-
     void DropsAcceptable(DropsAcceptableIter first, DropsAcceptableIter last,
                          const GG::Pt& pt, GG::Flags<GG::ModKey> mod_keys) const override;
 
 private:
-    bool                m_highlighted;
-    ShipSlotType        m_slot_type;
-    double              m_x_position_fraction, m_y_position_fraction;   //!< position on hull image where slot should be shown, as a fraction of that image's size
+    bool                                m_highlighted;
+    ShipSlotType                        m_slot_type;
+    double                              m_x_position_fraction, m_y_position_fraction;   //!< position on hull image where slot should be shown, as a fraction of that image's size
     std::shared_ptr<PartControl>        m_part_control;
     std::shared_ptr<GG::StaticGraphic>  m_background;
 };
@@ -3573,7 +3567,9 @@ void SlotControl::CancellingChildDragDrop(const std::vector<const GG::Wnd*>& wnd
     }
 }
 
-void SlotControl::AcceptDrops(const GG::Pt& pt, std::vector<std::shared_ptr<GG::Wnd>> wnds, GG::Flags<GG::ModKey> mod_keys) {
+void SlotControl::AcceptDrops(const GG::Pt& pt, std::vector<std::shared_ptr<GG::Wnd>> wnds,
+                              GG::Flags<GG::ModKey> mod_keys)
+{
     if (wnds.size() != 1)
         ErrorLogger() << "SlotControl::AcceptDrops given multiple wnds unexpectedly...";
 
@@ -3585,7 +3581,9 @@ void SlotControl::AcceptDrops(const GG::Pt& pt, std::vector<std::shared_ptr<GG::
         SlotContentsAlteredSignal(part_type, (mod_keys & GG::MOD_KEY_CTRL));
 }
 
-void SlotControl::ChildrenDraggedAway(const std::vector<GG::Wnd*>& wnds, const GG::Wnd* destination) {
+void SlotControl::ChildrenDraggedAway(const std::vector<GG::Wnd*>& wnds,
+                                      const GG::Wnd* destination)
+{
     if (wnds.empty())
         return;
     const GG::Wnd* wnd = wnds.front();
@@ -3631,42 +3629,43 @@ void SlotControl::SetPart(const PartType* part_type) {
     // remove existing part control, if any
     DetachChildAndReset(m_part_control);
 
+    if (!part_type)
+        return;
+
     // create new part control for passed in part_type
-    if (part_type) {
-        m_part_control = GG::Wnd::Create<PartControl>(part_type);
-        AttachChild(m_part_control);
-        m_part_control->InstallEventFilter(shared_from_this());
+    m_part_control = GG::Wnd::Create<PartControl>(part_type);
+    AttachChild(m_part_control);
+    m_part_control->InstallEventFilter(shared_from_this());
 
-        // single click shows encyclopedia data
-        m_part_control->ClickedSignal.connect(
-            PartTypeClickedSignal);
+    // single click shows encyclopedia data
+    m_part_control->ClickedSignal.connect(PartTypeClickedSignal);
 
-        // double click clears slot
-        m_part_control->DoubleClickedSignal.connect(
-            [this](const PartType*){ this->SlotContentsAlteredSignal(nullptr, false); });
-        SetBrowseModeTime(GetOptionsDB().Get<int>("ui.tooltip.delay"));
+    // double click clears slot
+    m_part_control->DoubleClickedSignal.connect(
+        [this](const PartType*){ this->SlotContentsAlteredSignal(nullptr, false); });
+    SetBrowseModeTime(GetOptionsDB().Get<int>("ui.tooltip.delay"));
 
-        // set part occupying slot's tool tip to say slot type
-        std::string title_text;
-        if (m_slot_type == SL_EXTERNAL)
-            title_text = UserString("SL_EXTERNAL");
-        else if (m_slot_type == SL_INTERNAL)
-            title_text = UserString("SL_INTERNAL");
-        else if (m_slot_type == SL_CORE)
-            title_text = UserString("SL_CORE");
+    // set part occupying slot's tool tip to say slot type
+    std::string title_text;
+    if (m_slot_type == SL_EXTERNAL)
+        title_text = UserString("SL_EXTERNAL");
+    else if (m_slot_type == SL_INTERNAL)
+        title_text = UserString("SL_INTERNAL");
+    else if (m_slot_type == SL_CORE)
+        title_text = UserString("SL_CORE");
 
-        m_part_control->SetBrowseInfoWnd(GG::Wnd::Create<IconTextBrowseWnd>(
-            ClientUI::PartIcon(part_type->Name()),
-            UserString(part_type->Name()) + " (" + title_text + ")",
-            UserString(part_type->Description())
-        ));
-    }
+    m_part_control->SetBrowseInfoWnd(GG::Wnd::Create<IconTextBrowseWnd>(
+        ClientUI::PartIcon(part_type->Name()),
+        UserString(part_type->Name()) + " (" + title_text + ")",
+        UserString(part_type->Description())
+    ));
 }
 
-/** PartsListBox accepts parts that are being removed from a SlotControl.*/
 void PartsListBox::DropsAcceptable(DropsAcceptableIter first, DropsAcceptableIter last,
                                    const GG::Pt& pt, GG::Flags<GG::ModKey> mod_keys) const
 {
+    // PartsListBox accepts parts that are being removed from a SlotControl
+
     for (DropsAcceptableIter it = first; it != last; ++it)
         it->second = false;
 
@@ -4359,13 +4358,16 @@ void DesignWnd::MainPanel::Populate() {
 
     const std::vector<HullType::Slot>& hull_slots = m_hull->Slots();
 
-    for (std::vector<HullType::Slot>::size_type i = 0; i != hull_slots.size(); ++i) {
+    for (auto i = 0; i != hull_slots.size(); ++i) {
         const HullType::Slot& slot = hull_slots[i];
         auto slot_control = GG::Wnd::Create<SlotControl>(slot.x, slot.y, slot.type);
         m_slots.push_back(slot_control);
         AttachChild(slot_control);
+
         slot_control->SlotContentsAlteredSignal.connect(
-            boost::bind(static_cast<void (DesignWnd::MainPanel::*)(const PartType*, unsigned int, bool, bool)>(&DesignWnd::MainPanel::SetPart), this, _1, i, true, _2));
+            boost::bind(static_cast<void (DesignWnd::MainPanel::*)(
+                const PartType*, unsigned int, bool, bool)>(&DesignWnd::MainPanel::SetPart),
+                    this, _1, i, true, _2));
         slot_control->PartTypeClickedSignal.connect(
             PartTypeClickedSignal);
     }
